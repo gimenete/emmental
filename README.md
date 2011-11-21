@@ -20,7 +20,7 @@ For example you have the following markup:
 		<li>fruit3</li>
 	</ul>
 
-This is dummy text. And now you would like to fill this HTML with real data (maybe fetched from a database or any other data sourde). For simplicity think that we have this data:
+This is dummy text. And now you would like to fill this HTML with real data (maybe fetched from a database or any other data source). For simplicity think that we have this data:
 
     var fruits = ['apple', 'pear', 'banana', 'pineapple']
 
@@ -101,7 +101,11 @@ You can find a complete example inside the "examples" folder in this repository.
 
 Emmental uses [domjs](https://github.com/jldailey/domjs) that is a recent implementation of the DOM interface an has some problems. See the [issues list](https://github.com/jldailey/domjs/issues)
 
-Emmental uses the "vm" module of NodeJS to evaluate the expressions inside HTML attributes. So don't use untrusted code in your HTML attributes :) Nevertheless the evaluated code doesn't have access to any node module. You can't even use ´setTimeout()´, ´setInterval()´, ´console.log()´,…
+Emmental uses the `vm` module of NodeJS to evaluate the expressions inside HTML attributes. So don't use untrusted code in your HTML attributes :) Nevertheless the evaluated code doesn't have access to any node module. You can't even use `setTimeout()`, `setInterval()`, `console.log()`,…
+
+# expressjs
+
+I will try to integrate emmental to work with expressjs
 
 # LICENSE
 
