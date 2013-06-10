@@ -19,10 +19,18 @@ var data = {
 	raw_message: '<strong>hello</strong> <em>world</em>!'
 }
 
+function loader(template, callback) {
+	fs.readFile(path.join(__dirname, template), 'utf8', callback)
+}
+
 var http = require('http')
 http.createServer(function (req, res) {
-	var html = fs.readFileSync(path.join(__dirname, 'example.html'), 'utf8')
-	emmental.processTemplate(html, data, function(err, out) {
+	emmental.processTemplate('example.html', data, loader, function(err, out) {
+		if (err) {
+			res.writeHead(500, {'Content-Type': 'text/html'})
+			res.end(''+err)
+			return
+		}
 		res.writeHead(200, {'Content-Type': 'text/html'})
 		res.end(out)
 	})

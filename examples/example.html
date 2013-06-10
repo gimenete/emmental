@@ -1,41 +1,45 @@
 <!doctype html>
-<html>
-
-	<!-- comment -->
-
-	<meta charset="utf-8">
+<html extends="layout.html">
+	<head block="head">
+		<meta charset="utf-8">
+		<title>Child template</title>
+	</head>
 	
-	<h1>Simple example</h1>
+	<h1>Child template</h1>
 	<hr>
-	
-	<div if="fruits.length > 0">
+
+	<div block="body">
+
+		<div if="fruits.length > 0">
+			
+			<p>There are <span put="fruits.length">3</span> fruits in the basket:</p>
+
+			<ul>
+				<li loop="fruits" as="fruit" put="fruit">foo</li>
+				<li if="0">bar</li>
+				<li if="0">baz</li>
+			</ul>
+		</div>
 		
-		<p>There are <span put="fruits.length">3</span> fruits in the basket:</p>
+		<h1>More complex data</h1>
+
+		<p>There are <span put="films.length === 0 ? 'no' : films.length">3</span> films</p>
 
 		<ul>
-			<li loop="fruits" as="fruit" put="fruit">foo</li>
-			<li if="0">bar</li>
-			<li if="0">baz</li>
+			<li loop="films" as="film">
+				<a href="#" put="film.title" put-href="'/films/'+film.id">Film 1</a>
+				<span put="film.genre">some genre</span>
+				
+				<ul if="film.characters">
+					<li loop="film.characters" as="character" put="character.name">some character</li>
+				</ul>
+			</li>
+			<li if="0"><a href="#">Film 2</a> <span>genre 2</span></li>
+			<li if="0"><a href="#">Film 3</a> <span>genre 3</span></li>
 		</ul>
+
+		<div raw="raw_message">Lorem ipsum</div>
+
 	</div>
-	
-	<h1>More complex data</h1>
-
-	<p>There are <span put="films.length === 0 ? 'no' : films.length">3</span> films</p>
-
-	<ul>
-		<li loop="films" as="film">
-			<a href="#" put="film.title" put-href="'/films/'+film.id">Film 1</a>
-			<span put="film.genre">some genre</span>
-			
-			<ul if="film.characters">
-				<li loop="film.characters" as="character" put="character.name">some character</li>
-			</ul>
-		</li>
-		<li if="0"><a href="#">Film 2</a> <span>genre 2</span></li>
-		<li if="0"><a href="#">Film 3</a> <span>genre 3</span></li>
-	</ul>
-
-	<div raw="raw_message">Lorem ipsum</div>
 
 </html>

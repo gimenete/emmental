@@ -30,8 +30,9 @@ function evaluate(code, options) {
 	return f.apply({}, values)
 }
 
-function processTemplate(html, data, callback) {
+function processTemplate(template, data, loader, callback) {
 	var out = []
+	var layout = []
 
 	function processArray(children, data) {
 		for (var i = 0; i < children.length; i++) {
@@ -105,8 +106,32 @@ function processTemplate(html, data, callback) {
 		}
 	}
 
+	function findBlock(children, name) {
+		for (var i = 0; i < children.length; i++) {
+			var child = children[i]
+			if (child.type === 'tag') {
+				if (child.attribs['block'] === name) {
+					return child
+				}
+				var e = findBlock(child.children, name)
+				if (e) return e
+			}
+		}
+		return null
+	}
+
 	function processElement(element, data) {
 		var attr = element.attribs
+
+		var block = attr['block']
+		delete attr['block']
+		if (block) {
+			var el = findBlock(layout, block)
+			if (el) {
+				processElement(el, data)
+				return
+			}
+		}
 
 		if (attr['if']) {
 			var value = evaluate('return '+attr['if'], data)
@@ -131,14 +156,49 @@ function processTemplate(html, data, callback) {
 		}
 	}
 
-	var handler = new htmlparser.DomHandler(function (err, dom) {
+	var handler = new htmlparser.DomHandler(function(err, dom) {
 		if (err) { return callback(err) }
-		processArray(dom, data)
-		callback(null, out.join(''))
+
+		var _extends = null
+		for (var i = 0; i < dom.length; i++) {
+			var el = dom[i]
+			if (el.attribs && el.attribs['extends']) {
+				_extends = el.attribs['extends']
+				break
+			}
+		}
+
+		function process() {
+			processArray(dom, data)
+			callback(null, out.join(''))
+		}
+
+		if (_extends) {
+			loader(_extends, function(err, html) {
+				if (err) { return callback(err) }
+
+				var parser = new htmlparser.Parser(new htmlparser.DomHandler(function(err, _layout) {
+					if (err) { return callback(err) }
+
+					layout = dom
+					dom = _layout
+					process()
+				}))
+				parser.write(html)
+				parser.end()
+			})
+		} else {
+			process()
+		}
 	})
-	var parser = new htmlparser.Parser(handler)
-	parser.write(html)
-	parser.end()
+
+	loader(template, function(err, html) {
+		if (err) { return callback(err) }
+
+		var parser = new htmlparser.Parser(handler)
+		parser.write(html)
+		parser.end()
+	})
 }
 
 exports.processTemplate = processTemplate
