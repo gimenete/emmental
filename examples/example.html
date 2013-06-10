@@ -1,17 +1,21 @@
+<!doctype html>
 <html>
 
-	<meta charset="utf-8"></meta>
+	<!-- comment -->
+
+	<meta charset="utf-8">
 	
 	<h1>Simple example</h1>
+	<hr>
 	
 	<div if="fruits.length > 0">
 		
 		<p>There are <span put="fruits.length">3</span> fruits in the basket:</p>
 
-		<ul foreach="fruit" in="fruits">
-			<li put="fruit">foo</li>
-			<li>bar</li>
-			<li>baz</li>
+		<ul>
+			<li loop="fruits" as="fruit" put="fruit">foo</li>
+			<li if="0">bar</li>
+			<li if="0">baz</li>
 		</ul>
 	</div>
 	
@@ -19,17 +23,19 @@
 
 	<p>There are <span put="films.length === 0 ? 'no' : films.length">3</span> films</p>
 
-	<ul foreach="film" in="films">
-		<li>
-			<a href="#" put="film.title" put-href="'/films/'+film.id">Peli 1</a>
+	<ul>
+		<li loop="films" as="film">
+			<a href="#" put="film.title" put-href="'/films/'+film.id">Film 1</a>
 			<span put="film.genre">some genre</span>
 			
-			<ul if="film.characters" foreach="character" in="film.characters">
-				<li put="character.name">some character</li>
+			<ul if="film.characters">
+				<li loop="film.characters" as="character" put="character.name">some character</li>
 			</ul>
 		</li>
-		<li><a href="#">Peli 2</a> <span>género 2</span></li>
-		<li><a href="#">Peli 3</a> <span>género 3</span></li>
+		<li if="0"><a href="#">Film 2</a> <span>genre 2</span></li>
+		<li if="0"><a href="#">Film 3</a> <span>genre 3</span></li>
 	</ul>
+
+	<div raw="raw_message">Lorem ipsum</div>
 
 </html>

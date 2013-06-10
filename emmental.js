@@ -1,114 +1,144 @@
-var fs = require('fs')
-var dom = require('./domjs/dom')
-var parser = require('./domjs/html/parser')
-var vm = require('vm')
+var htmlparser = require('htmlparser2')
+var _          = require('underscore')
 
-function expand(obj1, obj2) {
-	for (var key in obj1) {
-		obj2[key] = obj1[key]
+var singletonTags = ['area', 'base', 'br', 'col', 'command', 'embed', 'hr', 'img', 'input', 'link', 'meta', 'param', 'source']
+
+function createEscapeFunction(exp, tags) {
+	return function(str) {
+		str = (str && str.toString()) || ''
+		return str.replace(exp, function(tag) {
+			return tags[tag] || tag
+		})
 	}
-	return obj2
 }
 
-function findFirstElement(node) {
-	var children = node.childNodes
-	var found = null
-	for (var i=0; i < children.length; i++) {
-		var child = children[i]
-		if (child.nodeType === 1) { // element
-			if (!found) {
-				found = child
-			}
-			child.parentNode.removeChild(child)
+var escapeText = createEscapeFunction(/[&<>]/g, {'&': '&amp;', '<': '&lt;', '>': '&gt;' })
+var escapeAttr = createEscapeFunction(/[&<>"]/g, {'&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })
+
+function evaluate(code, options) {
+	var keys = []
+	var values = []
+	for (var key in options) {
+		if (options.hasOwnProperty(key)) {
+			keys.push(key)
+			values.push(options[key])
 		}
 	}
-	return found
+	keys.push(code)
+
+	var f = Function.apply({}, keys)
+	return f.apply({}, values)
 }
 
-function processElement(doc, node, data, tab) {
-	var attrs = node.attributes
-	
-	if (attrs['if']) {
-		var val = evaluate(data, attrs['if'])
-		if (!val) {
-			var parent = node.parentNode
-			parent.removeChild(node)
-			return
-		}
-		delete attrs['if']
-	}
-	
-	for (var key in attrs) {
-		if (key.indexOf('put-') === 0) {
-			var val = evaluate(data, attrs[key])
-			_key = key.substring(4)
-			attrs[_key] = val
-			delete attrs[key]
-		}
-	}
-	
-	if (attrs['put']) {
-		var val = evaluate(data, attrs['put'])
-		node.childNodes = [doc.createTextNode(val)]
-		delete attrs.put
-		return
-	}
-	
-	if (node.attributes['foreach'] && node.attributes['in']) {
-		var foreach = node.attributes['foreach']
-		var _in = node.attributes['in']
-		var col = evaluate(data, _in) || []
+function processTemplate(html, data, callback) {
+	var out = []
 
-		var template = findFirstElement(node)
-		for (var j=0; j < col.length; j++) {
-			var val = col[j]
-			var clone = deepClone(template) // template.cloneNode(true)
-			node.appendChild(clone)
-			var ex = {}; ex[foreach] = val
-			processElement(doc, clone, expand(data, ex), tab+' ')
-		}
-
-		delete attrs.foreach
-		delete attrs.in
-	} else {
-		var children = node.childNodes
-		for (var i=0; i < children.length; i++) {
+	function processArray(children, data) {
+		for (var i = 0; i < children.length; i++) {
 			var child = children[i]
-			processElement(doc, child, data, tab+' ')
+			if (child.type === 'tag') {
+				processElement(child, data)
+			} else if (child.type === 'text') {
+				out.push(escapeText(child.data))
+			} else if (child.type === 'directive') {
+				out.push('<', escapeText(child.data), '>')
+			} else if (child.type === 'comment') {
+				out.push('<!--', escapeText(child.data), '-->')
+			}
 		}
 	}
-}
 
-function deepClone(node) {
-	var n = node.cloneNode()
-	var children = node.childNodes
-	for (var i=0; i < children.length; i++) {
-		n.appendChild(deepClone(children[i]))
-	}
-	
-	var attrs = node.attributes
-	for (var key in attrs) {
-		n.attributes[key] = attrs[key]
-	}
-	return n
-}
+	function printElement(element, data) {
+		var name = element.name
+		var attr = _.clone(element.attribs)
 
-function evaluate(data, code) {
-	try {
-		vm.runInNewContext('result = '+code, data)
-	} catch(e) {
-		return ''
-	}
-	result = data.result
-	delete data.result
-	return result
-}
+		out.push('<', name)
+		// evaluate
+		var keys = _.keys(attr)
+		for (var i = 0; i < keys.length; i++) {
+			var key = keys[i]
+			if (key.indexOf('put-') === 0) {
+				attr[key.substring(4)] = evaluate('return '+attr[key], data)
+				delete attr[key]
+			}
+		}
 
-function processTemplate(html, data) {
-	var d = dom.createDocument()
-	var doc = parser.parse(html, d)
-	processElement(d, doc, data, ' ')
-	return doc
+		var _text = null
+		if (attr['put']) {
+			_text = evaluate('return '+attr['put'], data)
+			delete attr['put']
+		}
+
+		var _raw = null
+		if (attr['raw']) {
+			_raw = evaluate('return '+attr['raw'], data)
+			delete attr['raw']
+		}
+
+		// print
+		if (_.size(attr) > 0) {
+			for (var key in attr) {
+				if (attr.hasOwnProperty(key)) {
+					var value = escapeAttr(attr[key])
+					if (value !== '') {
+						out.push(' ', key, '="', escapeAttr(attr[key]), '"')
+					} else {
+						out.push(' ', key)
+					}
+				}
+			}
+		}
+		out.push('>')
+
+		if (_text !== null) {
+			out.push(escapeText(_text))
+		} else if (_raw !== null) {
+			out.push(_raw)
+		} else {
+			var children = element.children
+			if (children) {
+				processArray(children, data)
+			}
+		}
+		if (element.children.length > 0 && singletonTags.indexOf(name) === -1) {
+			out.push('</', name, '>') // TODO: omit special tags like <img>, <br>,...
+		}
+	}
+
+	function processElement(element, data) {
+		var attr = element.attribs
+
+		if (attr['if']) {
+			var value = evaluate('return '+attr['if'], data)
+			if (!value) return
+			delete attr['if']
+		}
+
+		if (attr['loop'] && attr['as']) {
+			var arr = evaluate('return '+attr['loop'], data)
+			var as = attr['as']
+			delete attr['loop']
+			delete attr['as']
+
+			for (var i = 0; i < arr.length; i++) {
+				var value = arr[i]
+				var _data = _.clone(data)
+				_data[as] = value
+				printElement(element, _data)
+			}
+		} else {
+			printElement(element, data)
+		}
+	}
+
+	var handler = new htmlparser.DomHandler(function (err, dom) {
+		if (err) { return callback(err) }
+		processArray(dom, data)
+		callback(null, out.join(''))
+	})
+	var parser = new htmlparser.Parser(handler)
+	parser.write(html)
+	parser.end()
 }
 
 exports.processTemplate = processTemplate

@@ -1,8 +1,8 @@
 # Goal
 
-Emmental is a simple server-side template engine with one goal in mind: to be able to use the same file as mockup and template. Usually designers create HTML mockups and then a developer copies this file to another file and starts to insert things like ${} <?php?> <%=%>,… breaking the HTML syntax, and making it impossible to be edited for a designer.
+Emmental is a simple server-side template engine with one goal in mind: to be able to use the same file as a mockup and as a template as well. Usually designers create HTML mockups and then developers copy those files to another directory and start to insert things like ${} <?php?> <%=%>,… breaking the HTML syntax, and making it impossible to be edited for a designer.
 
-The idea of emmental is to create a template engine that doesn't break the HTML. So the designer can keep using their toolkit, and the file is always capable to be rendered by a web browser.
+The idea of emmental is to create a template engine that doesn't break the HTML. So the designer can keep using their tools, and the file is always capable to be rendered by a web browser.
 
 # How?
 
@@ -38,35 +38,33 @@ As you can see you can use any javascript expression in the "put" attribute.
 
 To loop over a collection you will use the "foreach" and "in" operators. Example:
 
-		<ul foreach="fruit" in="fruits">
-			<li>foo</li>
+		<ul>
+			<li loop="fruits" as="fruit">foo</li>
 			<li>bar</li>
 			<li>baz</li>
 		</ul>
 
-With the "foreach" attribute you define the name of the current element in the collection in each iteration. With the "in" attribute you define the collection that has to be iterated.
-
-The convention is that the first element is used as template for each loop and the rest are simply ignored and removed.
+With the "loop" attribute you define which collection will be iterated. With the "as" attribute you define the variable name to access each item in the collection while iterating.
 
 The previous code will generate just four \<li>foo</li> elements which is not very useful. The complete example could be:
 
-		<ul foreach="fruit" in="fruits">
-			<li put="fruit">foo</li>
+		<ul>
+			<li loop="fruits" as="fruit" put="fruit">foo</li>
 			<li>bar</li>
 			<li>baz</li>
 		</ul>
 
-In a near future you will have access to more information such as the index in the loop, if it is the first element, if it is the last element,…
+Now you want to remove the last two <li> elements because they are dummy data. You can do the following
 
-I am also planning to be able to insert some kind of element by intervals. For example: insert "<br>" if "index % 4 == 0". This may be included as an element with an special attribute:
-
-    <br every="<condition>">
-
-In each iteration the condition is evaluated, and when it evaluates to true the element is inserted.
+		<ul>
+			<li loop="fruits" as="fruit" put="fruit">foo</li>
+			<li if="0">bar</li>
+			<li if="0">baz</li>
+		</ul>
 
 ## Conditional rendering
 
-You can use the "if" attribute to do conditional rendering. If the result of evaluating the expression is not "true" then the element is removed. For example:
+You can use the "if" attribute to do conditional rendering. The expression result is a falsy value then the element is removed. For example:
 
     <p if="fruits.length === 0">There are no fruits.</p>
 
@@ -86,26 +84,15 @@ Again, you can use any javascript expression.
 
 # Usage
 
-Emmental depends on [domjs](https://github.com/jldailey/domjs). Checkout its source code inside a "domjs" directory.
-
 Usage:
 
-	var emmenta = require('./emmental')
+	var emmental = require('emmental')
 	var html = fs.readFileSync('./example.html', 'utf8')
-	var out = emmental.processTemplate(html, data) // "out" is a DOM document
-	console.log(out.toString())
+	var out = emmental.processTemplate(html, data, function(err, out) {
+		console.log(out) // "out" is a string with the HTML output
+	})
 
 You can find a complete example inside the "examples" folder in this repository.
-
-# Known problems
-
-Emmental uses [domjs](https://github.com/jldailey/domjs) that is a recent implementation of the DOM interface an has some problems. See the [issues list](https://github.com/jldailey/domjs/issues)
-
-Emmental uses the `vm` module of NodeJS to evaluate the expressions inside HTML attributes. So don't use untrusted code in your HTML attributes :) Nevertheless the evaluated code doesn't have access to any node module. You can't even use `setTimeout()`, `setInterval()`, `console.log()`,…
-
-# expressjs
-
-I will try to integrate emmental to work with expressjs
 
 # LICENSE
 

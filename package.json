@@ -1,0 +1,28 @@
+{
+  "name": "emmental",
+  "version": "0.2.0",
+  "description": "Template engine designed with both developers and designers in mind",
+  "main": "emmental.js",
+  "directories": {
+    "example": "examples"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/gimenete/emmental.git"
+  },
+  "keywords": [
+    "template",
+    "engine"
+  ],
+  "author": "Alberto Gimeno <gimenete@gmail.com>",
+  "license": "MIT",
+  "readmeFilename": "README.md",
+  "gitHead": "51c06cfe9697ad9aa56218877d8405435106ee10",
+  "dependencies": {
+    "htmlparser2": "~3.1.2",
+    "underscore": "~1.4.4"
+  }
+}
