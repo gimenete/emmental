@@ -34,13 +34,23 @@ function processTemplate(template, data, loader, callback) {
 	var out = []
 	var layout = []
 
-	function processArray(children, data) {
+	function processArray(parentName, children, data) {
 		for (var i = 0; i < children.length; i++) {
 			var child = children[i]
-			if (child.type === 'tag') {
+			if (child.type === 'tag' || child.type === 'script') {
 				processElement(child, data)
 			} else if (child.type === 'text') {
-				out.push(escapeText(child.data))
+				var str = child.data
+				if (parentName === 'script') {
+					str = str.replace(/\${[^}]+}/g, function(expr) {
+						var code = expr.substring(2, expr.length-1)
+						var val =  evaluate('return '+code, data)
+						return val
+					})
+					out.push(str)
+				} else {
+					out.push(escapeText(str))
+				}
 			} else if (child.type === 'directive') {
 				out.push('<', escapeText(child.data), '>')
 			} else if (child.type === 'comment') {
@@ -52,8 +62,11 @@ function processTemplate(template, data, loader, callback) {
 	function printElement(element, data) {
 		var name = element.name
 		var attr = _.clone(element.attribs)
+		var ignore = name === 'o'
 
-		out.push('<', name)
+		if (!ignore) {
+			out.push('<', name)
+		}
 		// evaluate
 		var keys = _.keys(attr)
 		for (var i = 0; i < keys.length; i++) {
@@ -77,19 +90,21 @@ function processTemplate(template, data, loader, callback) {
 		}
 
 		// print
-		if (_.size(attr) > 0) {
-			for (var key in attr) {
-				if (attr.hasOwnProperty(key)) {
-					var value = escapeAttr(attr[key])
-					if (value !== '') {
-						out.push(' ', key, '="', escapeAttr(attr[key]), '"')
-					} else {
-						out.push(' ', key)
+		if (!ignore) {
+			if (_.size(attr) > 0) {
+				for (var key in attr) {
+					if (attr.hasOwnProperty(key)) {
+						var value = escapeAttr(attr[key])
+						if (value !== '') {
+							out.push(' ', key, '="', escapeAttr(attr[key]), '"')
+						} else {
+							out.push(' ', key)
+						}
 					}
 				}
 			}
+			out.push('>')
 		}
-		out.push('>')
 
 		if (_text !== null) {
 			out.push(escapeText(_text))
@@ -98,10 +113,10 @@ function processTemplate(template, data, loader, callback) {
 		} else {
 			var children = element.children
 			if (children) {
-				processArray(children, data)
+				processArray(name, children, data)
 			}
 		}
-		if (element.children.length > 0 && singletonTags.indexOf(name) === -1) {
+		if (!ignore && element.children.length > 0 && singletonTags.indexOf(name) === -1) {
 			out.push('</', name, '>') // TODO: omit special tags like <img>, <br>,...
 		}
 	}
@@ -169,7 +184,7 @@ function processTemplate(template, data, loader, callback) {
 		}
 
 		function process() {
-			processArray(dom, data)
+			processArray(null, dom, data)
 			callback(null, out.join(''))
 		}
 

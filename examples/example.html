@@ -12,7 +12,7 @@
 
 		<div if="fruits.length > 0">
 			
-			<p>There are <span put="fruits.length">3</span> fruits in the basket:</p>
+			<p>There are <span put="fruits.length">3</span> fruits in the basket: <o put="fruits.length">3</o></p>
 
 			<ul>
 				<li loop="fruits" as="fruit" put="fruit">foo</li>
@@ -39,6 +39,14 @@
 		</ul>
 
 		<div raw="raw_message">Lorem ipsum</div>
+
+		<script>var fruits = '${fruits.join(", ")}'</script>
+		<script>
+			var foo = [1, 2, 3]
+			for (var i = 0; i < foo.length; i++) {
+				console && console.log && console.log(foo[i])
+			}
+		</script>
 
 	</div>
 
