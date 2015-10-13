@@ -34,9 +34,9 @@ Use "put" to change the text contained within an HTML element. For example:
 
 As you can see you can use any javascript expression in the "put" attribute.
 
-## Loops: "foreach" and "in" attributes
+## Loops: "loop" and "as" attributes
 
-To loop over a collection you will use the "foreach" and "in" operators. Example:
+To loop over a collection you will use the "loop" and "as" attributes. Example:
 
 		<ul>
 			<li loop="fruits" as="fruit">foo</li>
